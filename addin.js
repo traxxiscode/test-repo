@@ -10,9 +10,9 @@
     dom.loadBadge = document.getElementById("loadBadge");
     dom.pingButton = document.getElementById("pingButton");
     dom.snapshotButton = document.getElementById("snapshotButton");
-    dom.sessionExistsButton = document.getElementById("sessionExistsButton");
-    dom.callExistsButton = document.getElementById("callExistsButton");
-    dom.sessionButton = document.getElementById("sessionButton");
+    dom.apiPropsButton = document.getElementById("apiPropsButton");
+    dom.statePropsButton = document.getElementById("statePropsButton");
+    dom.browserPropsButton = document.getElementById("browserPropsButton");
   }
 
   function bindEvents() {
@@ -29,16 +29,16 @@
       runTest("api-state-snapshot", testApiStateSnapshot);
     });
 
-    dom.sessionExistsButton.addEventListener("click", function () {
-      runTest("getSession-exists", testGetSessionExists);
+    dom.apiPropsButton.addEventListener("click", function () {
+      runTest("api-properties", testApiProperties);
     });
 
-    dom.callExistsButton.addEventListener("click", function () {
-      runTest("api-call-exists", testApiCallExists);
+    dom.statePropsButton.addEventListener("click", function () {
+      runTest("state-properties", testStateProperties);
     });
 
-    dom.sessionButton.addEventListener("click", function () {
-      runTest("invoke-getSession", testGetSession);
+    dom.browserPropsButton.addEventListener("click", function () {
+      runTest("browser-context", testBrowserContext);
     });
   }
 
@@ -82,10 +82,6 @@
     }
   }
 
-  async function testGetSession() {
-    return await invokeApiGetSession();
-  }
-
   async function testApiStateSnapshot() {
     return {
       apiExists: Boolean(apiRef),
@@ -98,43 +94,38 @@
     };
   }
 
-  async function testGetSessionExists() {
+  async function testApiProperties() {
     return {
       apiExists: Boolean(apiRef),
-      getSessionType: apiRef ? typeof apiRef.getSession : "missing",
-      getSessionPresent: Boolean(apiRef && apiRef.getSession)
+      userName: apiRef && (apiRef.userName || apiRef.UserName || null),
+      database: apiRef && (apiRef.database || apiRef.Database || null),
+      server: apiRef && (apiRef.server || apiRef.Server || null),
+      baseUrl: apiRef && (apiRef.baseUrl || apiRef.BaseUrl || null),
+      credentials: apiRef && {
+        userName: apiRef.userName || apiRef.UserName || null,
+        database: apiRef.database || apiRef.Database || null,
+        server: apiRef.server || apiRef.Server || null
+      }
     };
   }
 
-  async function testApiCallExists() {
+  async function testStateProperties() {
     return {
-      apiExists: Boolean(apiRef),
-      callType: apiRef ? typeof apiRef.call : "missing",
-      callPresent: Boolean(apiRef && apiRef.call)
+      stateExists: Boolean(stateRef),
+      stateKeys: stateRef ? Object.keys(stateRef).sort() : [],
+      stateSnapshot: sanitizeForOutput(stateRef)
     };
   }
 
-  function invokeApiGetSession() {
-    return new Promise(function (resolve, reject) {
-      if (!apiRef || typeof apiRef.getSession !== "function") {
-        reject(new Error("api.getSession() is unavailable."));
-        return;
-      }
-
-      try {
-        var result = apiRef.getSession(function (value) {
-          resolve(value);
-        }, function (error) {
-          reject(error);
-        });
-
-        if (result && typeof result.then === "function") {
-          result.then(resolve).catch(reject);
-        }
-      } catch (error) {
-        reject(error);
-      }
-    });
+  async function testBrowserContext() {
+    return {
+      locationHref: window.location.href,
+      locationSearch: window.location.search,
+      locationHash: window.location.hash,
+      referrer: document.referrer || "",
+      title: document.title,
+      userAgent: navigator.userAgent
+    };
   }
 
   function setStatus(message, isError) {
@@ -164,6 +155,17 @@
     }
 
     return error.message || fallback;
+  }
+
+  function sanitizeForOutput(value) {
+    try {
+      return JSON.parse(JSON.stringify(value || {}));
+    } catch (error) {
+      return {
+        note: "State could not be serialized directly.",
+        keys: value ? Object.keys(value).sort() : []
+      };
+    }
   }
 
   function registerAddIn() {
