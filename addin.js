@@ -15,6 +15,8 @@
     dom.browserPropsButton = document.getElementById("browserPropsButton");
     dom.staticFetchButton = document.getElementById("staticFetchButton");
     dom.functionFetchButton = document.getElementById("functionFetchButton");
+    dom.deviceStateButton = document.getElementById("deviceStateButton");
+    dom.devicePostButton = document.getElementById("devicePostButton");
   }
 
   function bindEvents() {
@@ -49,6 +51,14 @@
 
     dom.functionFetchButton.addEventListener("click", function () {
       runTest("fetch-function-route", testFunctionFetch);
+    });
+
+    dom.deviceStateButton.addEventListener("click", function () {
+      runTest("inspect-state-device", testStateDevice);
+    });
+
+    dom.devicePostButton.addEventListener("click", function () {
+      runTest("post-state-device-id", testDevicePost);
     });
   }
 
@@ -167,6 +177,56 @@
       statusText: response.statusText,
       contentType: response.headers.get("content-type"),
       bodyPreview: text.slice(0, 160)
+    };
+  }
+
+  async function testStateDevice() {
+    var device = stateRef && stateRef.device ? stateRef.device : null;
+
+    return {
+      hasDevice: Boolean(device),
+      deviceId: device && (device.id || device.Id || null),
+      deviceName: device && (device.name || device.Name || null),
+      deviceKeys: device ? Object.keys(device).sort() : [],
+      deviceSnapshot: sanitizeForOutput(device)
+    };
+  }
+
+  async function testDevicePost() {
+    var device = stateRef && stateRef.device ? stateRef.device : null;
+    var deviceId = device && (device.id || device.Id || null);
+
+    if (!deviceId) {
+      throw new Error("state.device.id is unavailable.");
+    }
+
+    var response = await fetch("/.netlify/functions/transport-start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        patientId: "TEST-DEVICE",
+        purpose: "Dialysis",
+        specialEquipment: "Wheelchair",
+        startedAt: new Date().toISOString(),
+        vehicle: {
+          key: String(deviceId),
+          name: device.name || device.Name || "Unknown device"
+        },
+        geotab: {
+          database: "",
+          domain: ""
+        }
+      })
+    });
+    var text = await response.text();
+
+    return {
+      deviceId: String(deviceId),
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type"),
+      bodyPreview: text.slice(0, 300)
     };
   }
 
