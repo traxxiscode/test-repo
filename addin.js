@@ -1,4 +1,5 @@
 (function () {
+  var ABSOLUTE_START_URL = "https://traxxis-time-traxx-drive.netlify.app/.netlify/functions/transport-start";
   var apiRef = null;
   var stateRef = null;
   var dom = {};
@@ -17,6 +18,8 @@
     dom.functionFetchButton = document.getElementById("functionFetchButton");
     dom.deviceStateButton = document.getElementById("deviceStateButton");
     dom.devicePostButton = document.getElementById("devicePostButton");
+    dom.relativeStartButton = document.getElementById("relativeStartButton");
+    dom.absoluteStartButton = document.getElementById("absoluteStartButton");
   }
 
   function bindEvents() {
@@ -59,6 +62,18 @@
 
     dom.devicePostButton.addEventListener("click", function () {
       runTest("post-state-device-id", testDevicePost);
+    });
+
+    dom.relativeStartButton.addEventListener("click", function () {
+      runTest("post-relative-transport-start", function () {
+        return postTransportStart("/.netlify/functions/transport-start");
+      });
+    });
+
+    dom.absoluteStartButton.addEventListener("click", function () {
+      runTest("post-absolute-transport-start", function () {
+        return postTransportStart(ABSOLUTE_START_URL);
+      });
     });
   }
 
@@ -221,6 +236,45 @@
     var text = await response.text();
 
     return {
+      deviceId: String(deviceId),
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type"),
+      bodyPreview: text.slice(0, 300)
+    };
+  }
+
+  async function postTransportStart(url) {
+    var device = stateRef && stateRef.device ? stateRef.device : null;
+    var deviceId = device && (device.id || device.Id || null);
+
+    if (!deviceId) {
+      throw new Error("state.device.id is unavailable.");
+    }
+
+    var response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        patientId: "TEST-START",
+        purpose: "Dialysis",
+        specialEquipment: "Wheelchair",
+        startedAt: new Date().toISOString(),
+        vehicle: {
+          key: String(deviceId),
+          name: device.name || device.Name || "Unknown device"
+        },
+        geotab: {
+          database: "",
+          domain: ""
+        }
+      })
+    });
+    var text = await response.text();
+
+    return {
+      url: url,
       deviceId: String(deviceId),
       ok: response.ok,
       status: response.status,
