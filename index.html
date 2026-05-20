@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Drive Test Harness</title>
+  <link rel="stylesheet" href="addin.css" />
+</head>
+<body>
+  <main class="appShell">
+    <section class="heroCard">
+      <p class="eyebrow">Drive test add-in</p>
+      <h1>Minimal Geotab Drive Harness</h1>
+      <p class="heroCopy">
+        Use these buttons to test progressively more complex behavior inside the Drive app without involving Firebase or the transport workflow.
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="panelHeader">
+        <div>
+          <p class="panelLabel">Lifecycle</p>
+          <h2>Page status</h2>
+        </div>
+        <span id="loadBadge" class="badge">Loaded</span>
+      </div>
+      <p id="statusMessage" class="statusMessage">Page initialized successfully.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panelHeader">
+        <div>
+          <p class="panelLabel">Button tests</p>
+          <h2>Safe click actions</h2>
+        </div>
+      </div>
+
+      <div class="buttonGrid">
+        <button id="pingButton" type="button" class="primaryButton">Plain click only</button>
+        <button id="sessionButton" type="button" class="secondaryButton">Test getSession()</button>
+        <button id="userButton" type="button" class="secondaryButton">Test User lookup</button>
+        <button id="deviceStatusButton" type="button" class="secondaryButton">Test DeviceStatusInfo</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHeader">
+        <div>
+          <p class="panelLabel">Output</p>
+          <h2>Latest result</h2>
+        </div>
+      </div>
+      <pre id="outputBox" class="outputBox">Waiting for test action...</pre>
+    </section>
+  </main>
+
+  <script src="addin.js"></script>
+</body>
+</html>
