@@ -13,6 +13,8 @@
     dom.apiPropsButton = document.getElementById("apiPropsButton");
     dom.statePropsButton = document.getElementById("statePropsButton");
     dom.browserPropsButton = document.getElementById("browserPropsButton");
+    dom.staticFetchButton = document.getElementById("staticFetchButton");
+    dom.functionFetchButton = document.getElementById("functionFetchButton");
   }
 
   function bindEvents() {
@@ -39,6 +41,14 @@
 
     dom.browserPropsButton.addEventListener("click", function () {
       runTest("browser-context", testBrowserContext);
+    });
+
+    dom.staticFetchButton.addEventListener("click", function () {
+      runTest("fetch-static-asset", testStaticFetch);
+    });
+
+    dom.functionFetchButton.addEventListener("click", function () {
+      runTest("fetch-function-route", testFunctionFetch);
     });
   }
 
@@ -125,6 +135,38 @@
       referrer: document.referrer || "",
       title: document.title,
       userAgent: navigator.userAgent
+    };
+  }
+
+  async function testStaticFetch() {
+    var response = await fetch("addin.css", {
+      method: "GET",
+      cache: "no-store"
+    });
+    var text = await response.text();
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type"),
+      bodyPreview: text.slice(0, 160)
+    };
+  }
+
+  async function testFunctionFetch() {
+    var response = await fetch("/.netlify/functions/ping", {
+      method: "GET",
+      cache: "no-store"
+    });
+    var text = await response.text();
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get("content-type"),
+      bodyPreview: text.slice(0, 160)
     };
   }
 
