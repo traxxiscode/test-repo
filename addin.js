@@ -9,9 +9,10 @@
     dom.outputBox = document.getElementById("outputBox");
     dom.loadBadge = document.getElementById("loadBadge");
     dom.pingButton = document.getElementById("pingButton");
+    dom.snapshotButton = document.getElementById("snapshotButton");
+    dom.sessionExistsButton = document.getElementById("sessionExistsButton");
+    dom.callExistsButton = document.getElementById("callExistsButton");
     dom.sessionButton = document.getElementById("sessionButton");
-    dom.userButton = document.getElementById("userButton");
-    dom.deviceStatusButton = document.getElementById("deviceStatusButton");
   }
 
   function bindEvents() {
@@ -24,16 +25,20 @@
       });
     });
 
+    dom.snapshotButton.addEventListener("click", function () {
+      runTest("api-state-snapshot", testApiStateSnapshot);
+    });
+
+    dom.sessionExistsButton.addEventListener("click", function () {
+      runTest("getSession-exists", testGetSessionExists);
+    });
+
+    dom.callExistsButton.addEventListener("click", function () {
+      runTest("api-call-exists", testApiCallExists);
+    });
+
     dom.sessionButton.addEventListener("click", function () {
-      runTest("getSession", testGetSession);
-    });
-
-    dom.userButton.addEventListener("click", function () {
-      runTest("user-lookup", testUserLookup);
-    });
-
-    dom.deviceStatusButton.addEventListener("click", function () {
-      runTest("device-status-info", testDeviceStatusInfo);
+      runTest("invoke-getSession", testGetSession);
     });
   }
 
@@ -81,36 +86,31 @@
     return await invokeApiGetSession();
   }
 
-  async function testUserLookup() {
-    var session = await invokeApiGetSession();
-    var userName = session.userName || session.UserName;
-    var users = await geotabGet("User", { name: userName }, 1);
+  async function testApiStateSnapshot() {
     return {
-      sessionUserName: userName,
-      users: users
+      apiExists: Boolean(apiRef),
+      stateExists: Boolean(stateRef),
+      apiUserName: apiRef && (apiRef.userName || apiRef.UserName || null),
+      apiDatabase: apiRef && (apiRef.database || apiRef.Database || null),
+      apiServer: apiRef && (apiRef.server || apiRef.Server || null),
+      stateKeys: stateRef ? Object.keys(stateRef).sort() : [],
+      apiKeysSample: apiRef ? Object.keys(apiRef).sort().slice(0, 25) : []
     };
   }
 
-  async function testDeviceStatusInfo() {
-    var session = await invokeApiGetSession();
-    var userName = session.userName || session.UserName;
-    var users = await geotabGet("User", { name: userName }, 1);
-
-    if (!users.length) {
-      throw new Error("No matching user was returned.");
-    }
-
-    var userId = users[0].id || users[0].Id;
-    var statuses = await geotabGet("DeviceStatusInfo", {
-      userSearch: {
-        id: stringifyId(userId)
-      }
-    }, 1);
-
+  async function testGetSessionExists() {
     return {
-      sessionUserName: userName,
-      resolvedUserId: stringifyId(userId),
-      statuses: statuses
+      apiExists: Boolean(apiRef),
+      getSessionType: apiRef ? typeof apiRef.getSession : "missing",
+      getSessionPresent: Boolean(apiRef && apiRef.getSession)
+    };
+  }
+
+  async function testApiCallExists() {
+    return {
+      apiExists: Boolean(apiRef),
+      callType: apiRef ? typeof apiRef.call : "missing",
+      callPresent: Boolean(apiRef && apiRef.call)
     };
   }
 
@@ -134,23 +134,6 @@
       } catch (error) {
         reject(error);
       }
-    });
-  }
-
-  function geotabGet(typeName, search, resultsLimit) {
-    return new Promise(function (resolve, reject) {
-      if (!apiRef || typeof apiRef.call !== "function") {
-        reject(new Error("api.call() is unavailable."));
-        return;
-      }
-
-      apiRef.call("Get", {
-        typeName: typeName,
-        search: search,
-        resultsLimit: resultsLimit || 1
-      }, function (result) {
-        resolve(Array.isArray(result) ? result : []);
-      }, reject);
     });
   }
 
@@ -181,22 +164,6 @@
     }
 
     return error.message || fallback;
-  }
-
-  function stringifyId(value) {
-    if (!value) {
-      return "";
-    }
-
-    if (typeof value === "string") {
-      return value;
-    }
-
-    if (value.id) {
-      return value.id;
-    }
-
-    return String(value);
   }
 
   function registerAddIn() {
